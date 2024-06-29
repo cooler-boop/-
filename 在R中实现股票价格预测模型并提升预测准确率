@@ -1,0 +1,86 @@
+library(quantmod)
+
+getSymbols("AAPL", src = "yahoo", from = "2020-01-01", to = "2023-01-01")
+data <- na.omit(AAPL)
+library(TTR)
+
+data$SMA_20 <- SMA(Cl(data), n = 20)
+data$SMA_50 <- SMA(Cl(data), n = 50)
+data$RSI <- RSI(Cl(data), n = 14)
+features <- data[, c("SMA_20", "SMA_50", "RSI")]
+target <- Cl(data)
+model_lm <- lm(y_train ~ ., data = X_train)
+y_pred_lm <- predict(model_lm, newdata = X_test)
+library(e1071)
+
+model_svm <- svm(y_train ~ ., data = X_train, kernel = "radial")
+y_pred_svm <- predict(model_svm, newdata = X_test)
+library(randomForest)
+
+model_rf <- randomForest(X_train, y_train, ntree = 100)
+y_pred_rf <- predict(model_rf, newdata = X_test)
+mse <- function(actual, predicted) {
+    mean((actual - predicted)^2)
+}
+
+mae <- function(actual, predicted) {
+    mean(abs(actual - predicted))
+}
+
+mse_lm <- mse(y_test, y_pred_lm)
+mae_lm <- mae(y_test, y_pred_lm)
+mse_svm <- mse(y_test, y_pred_svm)
+mae_svm <- mae(y_test, y_pred_svm)
+mse_rf <- mse(y_test, y_pred_rf)
+mae_rf <- mae(y_test, y_pred_rf)
+
+print(paste("Linear Regression MSE:", mse_lm, "MAE:", mae_lm))
+print(paste("SVM MSE:", mse_svm, "MAE:", mae_svm))
+print(paste("Random Forest MSE:", mse_rf, "MAE:", mae_rf))
+library(caret)
+
+tune_grid <- expand.grid(C = 2^(-1:2), sigma = 2^(-2:2))
+control <- trainControl(method = "cv", number = 5)
+model_svm_tuned <- train(y_train ~ ., data = X_train, method = "svmRadial", tuneGrid = tune_grid, trControl = control)
+y_pred_svm_tuned <- predict(model_svm_tuned, newdata = X_test)
+mse_svm_tuned <- mse(y_test, y_pred_svm_tuned)
+mae_svm_tuned <- mae(y_test, y_pred_svm_tuned)
+print(paste("Tuned SVM MSE:", mse_svm_tuned, "MAE:", mae_svm_tuned))
+get_real_time_data <- function(ticker) {
+    data <- getSymbols(ticker, src = "yahoo", from = Sys.Date() - 30, to = Sys.Date(), auto.assign = FALSE)
+    return(tail(data, 1))
+}
+
+real_time_data <- get_real_time_data("AAPL")
+real_time_features <- data.frame(SMA_20 = SMA(Cl(real_time_data), n = 20),
+                                 SMA_50 = SMA(Cl(real_time_data), n = 50),
+                                 RSI = RSI(Cl(real_time_data), n = 14))
+prediction <- predict(model_rf, newdata = real_time_features)
+print(prediction)
+library(shiny)
+
+ui <- fluidPage(
+    titlePanel("Stock Price Prediction"),
+    sidebarLayout(
+        sidebarPanel(
+            textInput("ticker", "Stock Ticker:", value = "AAPL")
+        ),
+        mainPanel(
+            textOutput("prediction")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$prediction <- renderText({
+        ticker <- input$ticker
+        real_time_data <- get_real_time_data(ticker)
+        real_time_features <- data.frame(SMA_20 = SMA(Cl(real_time_data), n = 20),
+                                         SMA_50 = SMA(Cl(real_time_data), n = 50),
+                                         RSI = RSI(Cl(real_time_data), n = 14))
+        prediction <- predict(model_rf, newdata = real_time_features)
+        paste("Predicted Price:", prediction)
+    })
+}
+
+shinyApp(ui = ui, server = server)
