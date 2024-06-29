@@ -1,0 +1,40 @@
+library(ggplot2)
+library(dplyr)
+
+# 两组房价数据
+today_prices <- c(61.8, 75.0, 93.0, 80.0, 90.0, 125.0, 200.0, 160.0, 200.0, 45.0, 85.0, 116.0, 62.0, 68.0, 90.0, 85.0, 88.0, 78.0, 95.0, 55.0, 70.0, 35.0, 75.0, 90.0, 64.0, 56.0, 148.0, 96.0, 790.0, 74.0)
+previous_prices <- c(95, 120, 90, 155, 200, 130, 140, 120, 103, 160, 28, 120, 46, 72, 99, 110, 95, 70, 140, 75, 100, 288, 45, 110, 180, 65, 78, 141, 130, 118)
+
+# 将数据放入数据框
+data <- data.frame(
+  Price = c(today_prices, previous_prices),
+  Date = c(rep("Today", length(today_prices)), rep("June 16", length(previous_prices)))
+)
+
+# 描述性统计
+today_stats <- summary(today_prices)
+previous_stats <- summary(previous_prices)
+
+print("Today's Prices Statistics:")
+print(today_stats)
+print("June 16th Prices Statistics:")
+print(previous_stats)
+
+# 数据可视化
+# 直方图
+ggplot(data, aes(x = Price, fill = Date)) +
+  geom_histogram(position = "dodge", bins = 10, alpha = 0.7) +
+  labs(title = "Histogram of House Prices", x = "Price (万)", y = "Frequency") +
+  theme_minimal()
+
+# 箱线图
+ggplot(data, aes(x = Date, y = Price, fill = Date)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Boxplot of House Prices", x = "Date", y = "Price (万)") +
+  theme_minimal()
+
+# 密度图
+ggplot(data, aes(x = Price, color = Date)) +
+  geom_density(size = 1) +
+  labs(title = "Density Plot of House Prices", x = "Price (万)", y = "Density") +
+  theme_minimal()
