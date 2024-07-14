@@ -1,0 +1,32 @@
+prices1 = c(95, 120, 90, 155, 200, 130, 140, 120, 103, 160, 28, 120, 46, 72, 99, 110, 95, 70, 140, 75, 100, 288, 45, 110, 180, 65, 78, 141, 130, 118)
+prices2 = c(61.8, 75, 80, 90, 125, 200, 160, 200, 45, 85, 116, 62, 68, 90, 85, 88, 78, 95, 55, 70, 35, 75, 90,64, 56, 148, 96, 790, 74, 75)
+prices3 = c(120.0, 68.0, 120.0, 72.0, 80.0, 98.0, 95.0, 150.0, 90.0, 90.0, 120.0, 92.0, 96.0, 115.0, 45.0, 34.0, 125.0, 120.0, 350.0, 130.0, 90.0, 42.0, 45.0, 95.0, 96.0, 105.0, 100.0, 95.0, 99.0, 160.0)
+prices4 = c(89.0, 88.0, 80.0, 58.0, 69.0, 95.0, 45.0, 91.0, 95.0, 140.0, 125.0, 80.0, 120.0, 48.0, 120.0, 68.0, 120.0, 72.0, 80.0, 98.0, 230.0, 95.0, 150.0, 90.0, 81.0, 90.0, 120.0, 92.0, 96.0, 100.0)
+prices5 = c(120.0, 120.0, 358.0, 99.0, 105.0, 105.0, 113.0, 70.0, 260.0, 125.0, 110.0, 95.0, 360.0, 295.0, 165.0, 45.0, 99.0, 78.0, 112.0, 98.0, 78.0, 63.0, 100.0, 128.0, 69.0, 100.0, 80.0, 98.0, 80.0, 28.0)
+prices6 = c(89, 68, 43, 165, 107, 58, 175, 88, 85, 53, 138, 80, 80, 66, 69, 79, 150, 105, 115, 138, 145, 55, 69.5, 118, 75, 290, 74, 110, 95, 125)
+# 创建一个数据框
+prices_df <- data.frame(
+  prices1 = prices1,
+  prices2 = prices2,
+  prices3 = prices3,
+  prices4 = prices4,
+  prices5 = prices5,
+  prices6 = prices6
+)
+summary(prices_df)
+sapply(prices_df, sd, na.rm = TRUE)
+mfrow=c(6,6)
+plot(prices_df)
+library(ggplot2)
+average_prices <- colMeans(do.call(cbind, prices_df), na.rm = TRUE)
+average_prices=data.frame(x=average_prices,y=c(1,2,3,4,5,6))
+
+ggplot(average_prices,aes(x,y = y))+
+  geom_line()
+model <- lm(prices6 ~ prices1, data = prices_df)
+summary(model)
+
+# 绘制回归图
+plot(prices_df$prices1, prices_df$prices6, main = "Linear Regression of prices6 on prices1",
+     xlab = "prices1", ylab = "prices6", pch = 19)
+abline(model, col = "blue")
