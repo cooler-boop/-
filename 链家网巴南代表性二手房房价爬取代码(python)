@@ -1,0 +1,106 @@
+import requests
+from bs4 import BeautifulSoup
+
+# 目标URL
+url = "https://cq.lianjia.com/ershoufang/banan/co32/"
+
+# 设置请求头
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
+# 创建一个会话
+session = requests.Session()
+session.headers.update(headers)
+
+# 设置重试机制
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+session.mount('https://', HTTPAdapter(max_retries=retries))
+
+# 获取网页内容的函数
+def fetch_page(url):
+    try:
+        response = session.get(url, verify=False)  # 注意：生产环境下请避免关闭SSL验证
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching the page: {e}")
+        return None
+
+# 获取网页内容
+page_content = fetch_page(url)
+if page_content:
+    # 使用BeautifulSoup解析HTML内容
+    soup = BeautifulSoup(page_content, 'lxml')
+
+    # 提取所有二手房价格信息
+    def extract_all_prices(soup):
+        prices = []
+        elements = soup.select('div.priceInfo > div.totalPrice > span')
+        for element in elements:
+            prices.append(element.text.strip())
+        return prices
+
+    # 提取并打印所有价格信息
+    all_prices = extract_all_prices(soup)
+    print("All extracted prices:", all_prices)
+else:
+    print("Failed to retrieve the page content.")
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# 创建包含房屋价格的数据列表
+prices = [95, 120, 90, 155, 200, 130, 140, 120, 103, 160, 28, 120, 46, 72, 99, 110, 95, 70, 140, 75, 100, 288, 45, 110, 180, 65, 78, 141, 130, 118]
+
+# 将数据列表转换为pandas数据框
+oldhousep = pd.DataFrame(prices, columns=['Price'])
+
+# 计算描述性统计信息
+descriptive_stats = oldhousep.describe()
+
+# 计算中位数
+median = oldhousep['Price'].median()
+
+# 添加中位数到描述性统计信息
+descriptive_stats.loc['median'] = median
+
+# 打印描述性统计信息
+print(descriptive_stats)
+
+# 数据可视化
+plt.figure(figsize=(10, 6))
+
+# 直方图
+plt.subplot(2, 2, 1)
+plt.hist(oldhousep['Price'], bins=10, edgecolor='k', alpha=0.7)
+plt.title('Histogram of House Prices')
+plt.xlabel('Price')
+plt.ylabel('Frequency')
+
+# 箱线图
+plt.subplot(2, 2, 2)
+plt.boxplot(oldhousep['Price'], vert=False)
+plt.title('Boxplot of House Prices')
+plt.xlabel('Price')
+
+# 密度图
+plt.subplot(2, 2, 3)
+oldhousep['Price'].plot(kind='density', linewidth=2)
+plt.title('Density Plot of House Prices')
+plt.xlabel('Price')
+
+# 描述性统计信息表格
+plt.subplot(2, 2, 4)
+plt.axis('off')
+table = plt.table(cellText=descriptive_stats.values,
+                  colLabels=descriptive_stats.columns,
+                  rowLabels=descriptive_stats.index,
+                  loc='center')
+table.scale(1, 2)
+
+# 显示图表
+plt.tight_layout()
+plt.show()
