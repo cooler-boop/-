@@ -1,20 +1,13 @@
 from fpdf import FPDF
-
 class PDF(FPDF):
-    def header(self):
-        self.set_font('HarmonyOSSansSC', '', 12)
-        self.cell(0, 10, '吴海锋', 0, 1, 'C')
-
     def chapter_title(self, title):
         self.set_font('HarmonyOSSansSC', '', 12)
         self.cell(0, 10, title, 0, 1, 'L')
         self.ln(2)
-
     def chapter_body(self, body):
         self.set_font('HarmonyOSSansSC', '', 12)
         self.multi_cell(0, 10, body)
         self.ln()
-
 # Initialize PDF
 pdf = PDF()
 # Add custom font
@@ -26,18 +19,20 @@ pdf.chapter_title("求职意向")
 pdf.chapter_body("寻求数据分析、市场研究相关岗位")
 # Personal Information
 pdf.chapter_title("个人信息")
-pdf.chapter_body("电话: 13098776074\n邮箱: 1669960822@qq.com, sokis2437@gmail.com\n地址: 重庆江北"\nGitHub: https://github.com/cooler-booper)
+pdf.chapter_body("""电话: 13098776074
+邮箱: 1669960822@qq.com
+地址: 重庆江北
+GitHub: https://github.com/cooler-boop""")
 # Education Background
 pdf.chapter_title("教育背景")
 pdf.chapter_body("重庆财经学院\n本科，经济统计学专业 (2021年 - 至今)")
 # Skills
 pdf.chapter_title("个人技能")
-pdf.chapter_body("精通Eviews、Word、Excel、spss、SQL等软件;精通Python、R等编程语言————在python中主要使用request、BeautifulSoup、pandas、numpy、sklearn.linear_model、matplotlib.pyplot、seabornd等进行数据的爬取处理、分析、可视化；在R中主要使用ggplot2进行可视化处理\n数据分析: 描述性分析、回归分析、时间序列分析、多元数据分析等")
-#培训经历
+pdf.chapter_body("""熟练使用Eviews、Word、Excel、SPSS、SQL等软件；精通Python和R编程语言。
+Python中主要使用requests、BeautifulSoup、pandas、numpy、sklearn、matplotlib、seaborn等库进行数据爬取、处理、分析和可视化；
+R中主要使用ggplot2进行可视化。数据分析技能包括描述性分析、回归分析、时间序列分析和多元数据分析。""")
+# Project Experience
 pdf.chapter_title("项目经历")
-pdf.chapter_body("WinHigh跨境电商加速营——OZON上传产品，运营维护重庆永海科技有限责任公司名下店铺"\n"使用Python爬虫获取巴南区代表性二手房房价并进行分析，得出当前中低端二手房市场价格波动较小，市场稳定，巴南区二手房购入后损益值较小，购房性价比高但高端二手房市均价在700-800万左右，保值率低，不值得当下入手的结论")
-# Competition Experience
-pdf.chapter_title("比赛经历")
-pdf.chapter_body("互联网+全国大学生创新创业大赛 (两次参赛,均获得校级优秀奖)\n正大杯全国大学生市场调查与分析大赛（曾获得校级二等奖）")
+pdf.chapter_body("""WinHigh跨境电商加速营——负责在OZON平台上传产品，运营和维护重庆永海科技有限责任公司名下的店铺。使用Python爬虫获取巴南区二手房房价并进行分析。结果显示，中低端二手房市场价格波动较小，市场稳定，购房性价比高；高端二手房均价700-800万元，保值率低，不建议入手。""")
 # Save PDF
 pdf.output("G:/简历/吴海锋个人简历.pdf")
