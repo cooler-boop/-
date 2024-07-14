@@ -1,0 +1,84 @@
+import os
+import pandas as pd
+from textblob import TextBlob
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+import numpy as np
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+def analyze_comments(file_path, output_path):
+    # Load the Excel file
+    xls = pd.ExcelFile(file_path)
+    df = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
+
+    # Select relevant columns and rename them for clarity
+    df_cleaned = df[['m-0', 'm-0 href']].rename(columns={'m-0': 'comment', 'm-0 href': 'link'})
+
+    # Drop rows with null values in 'comment'
+    df_cleaned = df_cleaned.dropna(subset=['comment'])
+
+    # Function to get the sentiment of a comment
+    def get_sentiment(text):
+        blob = TextBlob(text)
+        # Classify the polarity
+        if blob.sentiment.polarity > 0:
+            return 'positive'
+        elif blob.sentiment.polarity < 0:
+            return 'negative'
+        else:
+            return 'neutral'
+
+    # Apply sentiment analysis to the comments
+    df_cleaned['sentiment'] = df_cleaned['comment'].apply(get_sentiment)
+
+    # Save sentiment analysis results
+    sentiment_summary = df_cleaned['sentiment'].value_counts()
+    sentiment_summary.to_csv(os.path.join(output_path, 'sentiment_summary.csv'), header=True)
+
+    # Extract keywords
+    vectorizer = CountVectorizer(max_features=20, stop_words='english')
+    X = vectorizer.fit_transform(df_cleaned['comment'])
+    keywords = vectorizer.get_feature_names_out()
+    keyword_counts = np.asarray(X.sum(axis=0)).flatten()
+    keywords_df = pd.DataFrame({'keyword': keywords, 'count': keyword_counts})
+    keywords_df = keywords_df.sort_values(by='count', ascending=False)
+    keywords_df.to_csv(os.path.join(output_path, 'keywords_frequency.csv'), index=False)
+
+    # Perform LDA for topic modeling
+    vectorizer_lda = CountVectorizer(max_features=1000, stop_words='english')
+    X_lda = vectorizer_lda.fit_transform(df_cleaned['comment'])
+    lda = LatentDirichletAllocation(n_components=5, random_state=42)
+    lda.fit(X_lda)
+
+    # Extract topics and top words
+    topics = lda.components_
+    feature_names = vectorizer_lda.get_feature_names_out()
+
+    def display_topics(model, feature_names, n_top_words):
+        topics_words = []
+        for topic_idx, topic in enumerate(model.components_):
+            top_features_indices = topic.argsort()[:-n_top_words - 1:-1]
+            top_features = [feature_names[i] for i in top_features_indices]
+            topics_words.append(" ".join(top_features))
+        return topics_words
+
+    n_top_words = 10
+    topics_words = display_topics(lda, feature_names, n_top_words)
+    topics_df = pd.DataFrame({'Topic': range(1, len(topics_words) + 1), 'Top Words': topics_words})
+    topics_df.to_csv(os.path.join(output_path, 'lda_topics.csv'), index=False)
+
+    # Generate word cloud
+    text = " ".join(comment for comment in df_cleaned.comment)
+    wordcloud = WordCloud(max_words=100, background_color="white").generate(text)
+
+    # Save word cloud image
+    wordcloud_path = os.path.join(output_path, 'wordcloud.png')
+    wordcloud.to_file(wordcloud_path)
+
+    # Display the word cloud
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.show()
+
+    return df_cleaned, keywords_df, topics_df, wordcloud_path
