@@ -1,0 +1,132 @@
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import seaborn as sns
+import matplotlib.pyplot as plt
+# Load the provided Excel file
+file_path = r'C:/Users/HUAWEI/Desktop/文件/副本计算机类和经济类.xlsx'
+data = pd.read_excel(file_path)
+data.head()
+# 1. 基本统计分析
+# 计算每个城市的平均薪资、职位数量等
+city_stats = data.groupby('城市').agg({'平均薪资': 'mean', '工资区间': 'count'})
+
+# 2. 分类分析
+# 分析不同类别、不同公司性质、不同学历的职位的薪资水平
+category_salary = data.groupby('类别').agg({'平均薪资': 'mean'})
+company_type_salary = data.groupby('公司性质').agg({'平均薪资': 'mean'})
+education_salary = data.groupby('学历').agg({'平均薪资': 'mean'})
+
+# 3. 技能分析
+# 分析与薪资相关的技能标签
+skill_salary = data.groupby('技能标签').agg({'平均薪资': 'mean'})
+
+# 4. 回归分析
+# 建立薪资与技能标签、公司性质、学历等因素的回归模型，预测薪资
+X = data[['技能标签', '公司性质', '学历']]
+X = pd.get_dummies(X, columns=['技能标签', '公司性质', '学历'])
+y = data['平均薪资']
+
+model = LinearRegression()
+model.fit(X, y)
+
+# 5. 可视化分析
+# Load the dataset
+file_path = r'C:/Users/HUAWEI/Desktop/文件/副本计算机类和经济类.xlsx'
+data = pd.read_excel(file_path)
+# Check for duplicate rows based on all columns
+duplicate_rows = data[data.duplicated(keep=False)].sort_values(by=data.columns.tolist())
+# Display duplicate rows
+print(duplicate_rows)
+# Convert the '平均薪资' column to numeric, replacing non-numeric values with NaN
+data['平均薪资'] = pd.to_numeric(data['平均薪资'], errors='coerce')
+data = data.dropna(subset=['平均薪资'])
+# Create a pivot table to reshape the data for the heatmap
+pivot_table = data.pivot('城市', '类别', '平均薪资')
+plt.figure(figsize=(10, 8))
+sns.heatmap(pivot_table, annot=True, cmap='YlGnBu', fmt='g', 
+            xticklabels=pivot_table.columns.tolist(),
+            yticklabels=pivot_table.index.tolist(),
+            cbar_kws={'label': '平均薪资'})
+plt.title('不同城市的薪资水平分布')
+plt.show()
+# Descriptive statistics of the numerical columns
+numerical_stats = data.describe()
+numerical_stats
+# Split the data into "计算机类" and "经济类"
+computer_data = data[data['类别'] == '计算机类']
+economic_data = data[data['类别'] == '经济类']
+
+# Set up the figure and axes
+fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(14, 10))
+
+# Plot the histogram for "计算机类"
+ax[0, 0].hist(computer_data['平均薪资'], bins=30, color='blue', alpha=0.7, label='计算机类')
+ax[0, 0].set_title('Histogram of Salary for 计算机类')
+ax[0, 0].set_xlabel('Salary (元)')
+ax[0, 0].set_ylabel('Frequency')
+
+# Plot the boxplot for "计算机类"
+ax[0, 1].boxplot(computer_data['平均薪资'])
+ax[0, 1].set_title('Boxplot of Salary for 计算机类')
+ax[0, 1].set_xlabel('Salary (元)')
+
+# Plot the histogram for "经济类"
+ax[1, 0].hist(economic_data['平均薪资'], bins=30, color='green', alpha=0.7, label='经济类')
+ax[1, 0].set_title('Histogram of Salary for 经济类')
+ax[1, 0].set_xlabel('Salary (元)')
+ax[1, 0].set_ylabel('Frequency')
+
+# Plot the boxplot for "经济类"
+ax[1, 1].boxplot(economic_data['平均薪资'])
+ax[1, 1].set_title('Boxplot of Salary for 经济类')
+ax[1, 1].set_xlabel('Salary (元)')
+
+# Display the plots
+plt.tight_layout()
+plt.show()
+# Define the salary intervals
+intervals = [10000, 20000, 30000, 40000, 100000]
+
+# Create a new column in the dataframe to indicate the salary interval for each record
+data['工资区间'] = pd.cut(data['平均薪资'], bins=intervals, labels=False)
+
+# Create a dictionary to store the data subsets for each salary interval
+interval_data = {}
+
+# Loop through each salary interval and store the corresponding data subset in the dictionary
+for i in range(len(intervals) - 1):
+    interval_name = f"{intervals[i]}-{intervals[i+1]}"
+    interval_data[interval_name] = data[(data['工资区间'] >= i) & (data['工资区间'] < i+1)]
+
+# Remove the '工资区间' column
+data.drop(['工资区间'], axis=1, inplace=True)
+
+interval_data
+from sklearn.decomposition import PCA  
+# Perform PCA on each salary interval subset using only the numerical columns
+pca_data_numerical = {}
+for i, (interval_name, interval_subdata) in enumerate(interval_data.items()):
+    numerical_columns = interval_subdata.select_dtypes(include=['float64', 'int64']).columns
+    pca = PCA(n_components=2)
+    pca_result = pca.fit_transform(interval_subdata[numerical_columns])
+    pca_data_numerical[interval_name] = pca_result
+
+# Plot the PCA results for each interval
+fig, axes = plt.subplots(nrows=len(intervals) - 1, ncols=2, figsize=(15, 10))
+
+for i, (interval_name, pca_result) in enumerate(pca_data_numerical.items()):
+    axes[i, 0].scatter(pca_result[:, 0], pca_result[:, 1])
+    axes[i, 0].set_title(f'PCA of Salary Interval {interval_name}')
+    axes[i, 0].set_xlabel('Principal Component 1')
+    axes[i, 0].set_ylabel('Principal Component 2')
+
+    axes[i, 1].hist2d(pca_result[:, 0], pca_result[:, 1])
+    axes[i, 1].set_title(f'2D Histogram of Salary Interval {interval_name}')
+    axes[i, 1].set_xlabel('Principal Component 1')
+    axes[i, 1].set_ylabel('Principal Component 2')
+
+plt.tight_layout()
+plt.show()
+
+
