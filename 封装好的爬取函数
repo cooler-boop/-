@@ -1,0 +1,41 @@
+from selenium import webdriver
+from bs4 import BeautifulSoup
+
+url = 'http://dzsws.mofcom.gov.cn/article/ztxx/ndbg/202306/20230603415404.shtml'
+
+# 设置 ChromeDriver 路径
+chrome_driver_path = '/path/to/chromedriver'
+
+# 创建 WebDriver 实例
+driver = webdriver.Chrome(executable_path=chrome_driver_path)
+
+# 打开网页
+driver.get(url)
+
+# 等待页面加载完成
+driver.implicitly_wait(10)
+
+# 获取网页内容
+page_source = driver.page_source
+
+# 关闭浏览器
+driver.quit()
+
+# 解析 HTML
+soup = BeautifulSoup(page_source, 'html.parser')
+
+# 查找 PDF 链接
+pdf_link = soup.find('a', href=lambda x: x.endswith('.pdf'))
+
+if pdf_link:
+    # 获取 PDF 文件 URL
+    pdf_url = pdf_link['href']
+
+    # 下载并保存 PDF 文件
+    pdf_response = requests.get(pdf_url)
+    with open('output.pdf', 'wb') as f:
+        f.write(pdf_response.content)
+
+    print("PDF 文件已下载并保存为 output.pdf")
+else:
+    print("未找到 PDF 文件")
